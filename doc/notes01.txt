@@ -1,0 +1,6 @@
+I put dummy files in each folder, because otherwise github will refuse to upload "empty" directories.
+
+:)
+
+===
+
