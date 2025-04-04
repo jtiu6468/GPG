@@ -1,6 +1,18 @@
+=== NOTES ===
+
+This folder is for documentation file and general notes of any sort, that we want to preserve: temporarily or permanently
+
+===
+
 I put dummy files in each folder, because otherwise github will refuse to upload "empty" directories.
 
 :)
 
 ===
 
+I push onto github frequently, just for saving the work / backing up.
+(I apologize, it's a habit!)
+
+:)
+
+===
