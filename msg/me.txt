@@ -1,0 +1,1 @@
+message encrypted = encrypted version of the message to be sent
