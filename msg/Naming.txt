@@ -1,0 +1,18 @@
+mte
+me
+mtd
+md
+
+Message to encrypt
+Message encrypted
+Message to decrypt
+Message decrypted
+
+===
+
+OR MAYBE we just need two:
+message and message_encrpted
+
+m and me
+
+??
