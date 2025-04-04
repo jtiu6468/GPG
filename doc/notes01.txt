@@ -1,16 +1,19 @@
 === NOTES ===
 
-This folder is for documentation file and general notes of any sort, that we want to preserve: temporarily or permanently
+We can use this doc folder for documentation files and general notes of any sort.
+Notes that we want to preserve: temporarily or permanently
 
 ===
 
-I put dummy files in each folder, because otherwise github will refuse to upload "empty" directories.
+I put dummy files in each folder, because otherwise github will refuse to upload "empty" folders.
 
 :)
 
 ===
 
-I push onto github frequently, just for saving the work / backing up.
+By the way,
+I push onto github frequently,
+just for saving the work / backing up.
 (I apologize, it's a habit!)
 
 :)
