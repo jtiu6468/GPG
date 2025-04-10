@@ -2,7 +2,7 @@ import telegram
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 # Replace 'YOUR_BOT_TOKEN' with the actual token you received from BotFather
-BOT_TOKEN = '8130891924:AAETe99LGiL5HzuFKEDC7KVmNZBfGeas1PY'
+BOT_TOKEN = 'YOUR_BOT_TOKEN'
 
 async def start(update, context):
     """Sends a welcome message and the chat ID."""
