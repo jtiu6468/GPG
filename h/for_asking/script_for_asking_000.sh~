@@ -1,0 +1,30 @@
+HOME=/home/k
+cd $HOME/genkan/GPG/h/for_asking || exit
+F=$HOME/z__question_plus_current_state.txt
+SRC=$HOME/genkan/GPG/src
+
+# /home/k/genkan/GPG/src
+
+echo 'Hi
+
+We are developing a ...
+
+I have the following question.
+
+
+
+Thank you very much for your help.
+
+===
+
+Below is the directory tree structure and
+
+the current status of our code...
+
+===
+
+'
+
+
+
+

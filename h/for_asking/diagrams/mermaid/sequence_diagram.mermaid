@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant User as User
+    participant Bot as GPG Telegram Bot
+    participant GPG as GPG System
+    participant Recipient as Recipient (RECIPIENT_CHAT_ID)
+
+    Note over User,Recipient: Setting Up
+    User->>Bot: /createkey User email@example.com
+    Bot->>GPG: Generate new GPG key pair
+    GPG-->>Bot: Return key pair details
+    Bot-->>User: Send public key file
+    
+    Note over User,Recipient: Encryption & Sending
+    User->>Bot: /encrypt [fingerprint] Secret message
+    Bot->>GPG: Encrypt message with recipient's public key
+    GPG-->>Bot: Return encrypted message
+    Bot->>Recipient: Forward encrypted message
+    Bot-->>User: Confirm message sent
+    
+    Note over User,Recipient: Decryption
+    Recipient->>Bot: /decrypt (replying to encrypted message)
+    Bot->>GPG: Decrypt message using recipient's private key
+    GPG-->>Bot: Return decrypted message
+    Bot-->>Recipient: Show decrypted message
+    
+    Note over User,Recipient: Key Management
+    User->>Bot: /importkey (with key file attached)
+    Bot->>GPG: Import public key
+    GPG-->>Bot: Confirm key imported
+    Bot-->>User: Confirm success, show fingerprint
+    
+    User->>Bot: /listkeys
+    Bot->>GPG: List all public keys
+    GPG-->>Bot: Return key list
+    Bot-->>User: Display available keys

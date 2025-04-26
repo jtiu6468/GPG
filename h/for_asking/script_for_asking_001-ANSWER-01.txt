@@ -1,0 +1,61 @@
+I'll create Linux-compatible versions of both scripts for your Debian 12 PC. The main changes I'll make include:
+
+1. Adjusting the GPG home directory paths for Linux
+2. Removing Windows-specific path handling
+3. Making sure the dependencies can be installed on Linux
+
+Let's start by creating both scripts:
+
+I've created Linux-compatible versions of the scripts for your Debian 12 PC, along with an installation script and README file. Here's what I've provided:
+
+1. **sendMessage.py** - The main bot script, adapted for Linux with:
+   - Linux-specific GPG home directory handling
+   - Proper shebang for Linux execution
+   - Simplified error handling
+
+2. **telegram_getid.py** - The utility script to get chat IDs, properly typed and formatted for Linux
+
+3. **install_dependencies.sh** - A shell script to install all necessary dependencies:
+   - Installs required system packages
+   - Creates a Python virtual environment
+   - Installs Python dependencies
+   - Makes the scripts executable
+
+4. **README.md** - Documentation explaining how to set up and use the bot
+
+## How to Use These Scripts
+
+1. First, save all the files to your Debian 12 system in the same directory structure shown in the README
+
+2. Install the dependencies:
+   ```bash
+   chmod +x install_dependencies.sh
+   ./install_dependencies.sh
+   ```
+
+3. Update the bot tokens:
+   - In `sendMessage.py`, update `BOT_TOKEN` (if needed) and `RECIPIENT_CHAT_ID`
+   - In `telegram_getid.py`, replace `'YOUR_BOT_TOKEN'` with your actual bot token
+
+4. Run the scripts:
+   ```bash
+   # Activate the virtual environment
+   source gpg_telegram_env/bin/activate
+   
+   # Run the main bot
+   ./sendMessage.py
+   
+   # Or run the utility script to get chat IDs
+   ./telegram_getid.py
+   ```
+
+## Key Differences from the Windows Version
+
+1. The GPG home directory is now set to the Linux standard `~/.gnupg`
+2. Removed Windows-specific path handling
+3. Added proper Linux shebangs (`#!/usr/bin/env python3`)
+4. Added a dependency installation script specific to Debian
+5. Improved error handling and logging for Linux environments
+
+Let me know if you need any clarification or have any questions!
+

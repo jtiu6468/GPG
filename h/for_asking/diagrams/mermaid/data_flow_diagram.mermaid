@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph User
+        UC[User Commands]
+    end
+    
+    subgraph "GPG Telegram Bot System"
+        TB[Telegram Bot]
+        GPG[GPG System]
+        KS[Key Storage<br>~/.gnupg]
+    end
+    
+    subgraph Recipient
+        RM[Recipient Messages]
+    end
+    
+    UC -- "/createkey,<br>/importkey,<br>/encrypt,<br>/decrypt,<br>/listkeys" --> TB
+    
+    TB -- "Key generation<br>request" --> GPG
+    GPG -- "Key pair<br>generation" --> KS
+    KS -- "Key details" --> GPG
+    GPG -- "Public key,<br>key details" --> TB
+    TB -- "Public key file,<br>confirmation" --> UC
+    
+    TB -- "Encryption<br>request" --> GPG
+    GPG -- "Access<br>public key" --> KS
+    KS -- "Key data" --> GPG
+    GPG -- "Encrypted<br>message" --> TB
+    TB -- "Encrypted<br>message" --> RM
+    TB -- "Confirmation" --> UC
+    
+    RM -- "/decrypt<br>request" --> TB
+    TB -- "Decryption<br>request" --> GPG
+    GPG -- "Access<br>private key" --> KS
+    KS -- "Key data" --> GPG
+    GPG -- "Decrypted<br>message" --> TB
+    TB -- "Decrypted<br>message" --> RM
+    
+    UC -- "Plain text<br>message" --> TB
+    TB -- "Forwarded<br>message" --> RM
