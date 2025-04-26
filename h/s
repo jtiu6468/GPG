@@ -8,7 +8,7 @@ git config pull.rebase true   ### IF true, then over-write...
 ===============================================================================
 git config pull.rebase        ### DEFAULT is false
 ===============================================================================
-cd da01/
+cd GPG/
 git add .
 git commit -m "abc"
 git pull origin main #### PULL PULL PULL <<<<<<<<<<<<<<<<<<<<
@@ -17,7 +17,7 @@ git pull origin main #### PULL PULL PULL <<<<<<<<<<<<<<<<<<<<
 ===============================================================================
 PUSHING
 ===============================================================================
-cd da01/
+cd GPG/
 git add .
 git commit -m "xyz"
 git push -u     origin main
