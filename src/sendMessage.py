@@ -5,7 +5,7 @@ import asyncio, nest_asyncio, subprocess, os, datetime, tempfile, gnupg, re
 nest_asyncio.apply()
 PASSPHRASE = 0
 BOT_TOKEN = "8130891924:AAETe99LGiL5HzuFKEDC7KVmNZBfGeas1PY"
-RECIPIENT_CHAT_ID = "1668013863"
+RECIPIENT_CHAT_ID = "REPLACE WITH RECIPIENT CHAT ID"
 
 
 
