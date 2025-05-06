@@ -1,8 +1,6 @@
 from telegram import Update, Message
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes, ConversationHandler
 import asyncio, nest_asyncio, subprocess, os, datetime, tempfile, gnupg, re
-import logging
-logging.basicConfig(level=logging.INFO)
 
 nest_asyncio.apply()
 PASSPHRASE = 0
