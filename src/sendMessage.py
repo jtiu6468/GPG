@@ -1,26 +1,27 @@
 from telegram import Update, Message
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes, ConversationHandler
 import asyncio, nest_asyncio, subprocess, os, datetime, tempfile, gnupg, re
+import logging
+logging.basicConfig(level=logging.INFO)
 
 nest_asyncio.apply()
 PASSPHRASE = 0
 BOT_TOKEN = "8130891924:AAETe99LGiL5HzuFKEDC7KVmNZBfGeas1PY"
-RECIPIENT_CHAT_ID = "REPLACE WITH RECIPIENT CHAT ID"
+RECIPIENT_CHAT_ID = "1668013863"
 
 
 
-# Locate directory of GPG (preferably install it in APPDATA)
+# Locate directory of GPG (install it in APPDATA)
 def get_gpg_home():
     path = os.path.join(os.environ.get('APPDATA', ''), 'gnupg')
     os.makedirs(path, exist_ok=True)
     return path
 
-
-
 GPG_HOME = get_gpg_home()
+
 try:
     gpg = gnupg.GPG(gnupghome=GPG_HOME)
-    print("GPG initialized successfully")
+    print("GPG initialized successfully.")
 except Exception as e:
     f"GPG setup failed ({e}).\nCreating a temporary GPG home."
     gpg = gnupg.GPG(gnupghome=tempfile.mkdtemp(prefix="temp_gpg_"))
@@ -29,7 +30,6 @@ except Exception as e:
 
 # Generates a temporary GPG key for encryption and signing which will expire in 1 day
 async def create_temp_key(name, email, passphrase):
-    # Set key parameters for a 1-day key
     key_params = {
         'name_real': name,
         'name_email': email,
@@ -42,15 +42,11 @@ async def create_temp_key(name, email, passphrase):
         'passphrase': passphrase,
         'expire_date': '1d'
     }
-    
-    # Generate key
     key = gpg.gen_key(gpg.gen_key_input(**key_params))
     fingerprint = key.fingerprint
+    expires = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%m-%d-%Y %H:%M:%S')
     
-    # Calculate expiration date
-    expiration_date = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
-    
-    return fingerprint, expiration_date
+    return fingerprint, expires
 
 
 
@@ -87,30 +83,46 @@ async def create_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 # Validates the user's passphrase, generates a GPG key, and sends the public key and fingerprint to the user
-async def get_passphrase(update: Update, context: ContextTypes.DEFAULT_TYPE):  
+async def get_passphrase(update: Update, context: ContextTypes.DEFAULT_TYPE):
     passphrase = update.message.text
     name = context.user_data.get('name')
     email = context.user_data.get('email')
-    print(f"Passphrase length: {len(passphrase)}, contains symbol: {bool(re.search(r'[\W_]', passphrase))}")
- 
+
     if len(passphrase) < 12 or not re.search(r'[\W_]', passphrase):
-        await update.message.reply_text("Invalid passphrase. Ensure it has at least 8 characters and contains at least one symbol.")
+        try:
+            await update.message.delete()
+        except Exception as e:
+            await update.message.reply_text("Consider deleting failed passphrase manually for security.")
+        await update.message.reply_text("Invalid passphrase. Please enter a new one, ensure it has at least 12 characters and contains at least one symbol.")
         return PASSPHRASE
-    
+
     try:
         await update.message.delete()
     except Exception as e:
-        print(f"Could not delete passphrase: {e}")
         await update.message.reply_text("Consider deleting passphrase manually for security.")
-    
+
+    if 'waiting_for_passphrase' in context.user_data:
+        encrypted_text = context.user_data.pop('waiting_for_passphrase')
+        decrypted_data = gpg.decrypt(encrypted_text, passphrase=passphrase)
+
+        if not decrypted_data.ok:
+            await update.message.reply_text(f"Decryption failed: {decrypted_data.status}")
+            return ConversationHandler.END
+
+        decrypted_text = str(decrypted_data) 
+        await update.message.reply_text(f"Decrypted message:\n\n{decrypted_text}")
+        
+        context.user_data.clear()
+        return ConversationHandler.END
+
     if 'name' not in context.user_data or 'email' not in context.user_data:
         await update.message.reply_text("Error: Missing name or email. Please retry /createkey.")
         return ConversationHandler.END
-    
+
     await update.message.reply_text(f"Valid passphrase received for {name}, {email}. Generating your fingerprint...")
-    
+
     try:
-        fingerprint, expiration_date = await create_temp_key(name, email, passphrase)
+        fingerprint, expires = await create_temp_key(name, email, passphrase)
         public_key = gpg.export_keys(fingerprint)
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.txt') as tmp:
@@ -127,15 +139,14 @@ async def get_passphrase(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.unlink(tmp_path)
         
         await update.message.reply_text(
-            f"Key created successfully with fingerprint: `{fingerprint}`\n"
-            f"\nKey will expire in 1 day ({expiration_date}).\nUse /encrypt <fingerprint> <message> to encrypt a message.",
+            f"Key created successfully with fingerprint: `{fingerprint}`.\n"
+            f"\nKey will expire in 1 day ({expires}).\nUse /encrypt <fingerprint> <message> to encrypt a message.",
             parse_mode='Markdown'
         )
-    
+
     except Exception as e:
-        print(f"Error creating key: {e}")
         await update.message.reply_text(f"Error creating key: {str(e)}")
-    
+
     context.user_data.clear()
     return ConversationHandler.END
 
@@ -182,13 +193,17 @@ async def encrypt_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(args) < 2:
         await update.message.reply_text("Usage: /encrypt <recipient_fingerprint> <message>")
         return
-    
+    try:
+        await update.message.delete()
+    except Exception as e:
+        print(f"Could not delete passphrase message: {e}")
+        
     fingerprint = args[0]
     message = ' '.join(args[1:])
     
     try:
         encrypted_message = await encrypt_message(message, fingerprint)     
-        # Forward the encrypted message to the recipient
+
         await context.bot.send_message(
             chat_id=RECIPIENT_CHAT_ID,
             text=f"Encrypted message:\n\n{encrypted_message}"
@@ -202,43 +217,44 @@ async def encrypt_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Decrypts an encrypted message and sends the decrypted message back to the user
 async def decrypt_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Get the encrypted text from a reply or command arguments
+    args = context.args
+    passphrase = args[0]
+    
+    if len(args) < 1:
+        await update.message.reply_text("Usage: /decrypt <passphrase>")
+        return
+
+    try:
+        await update.message.delete()
+    except Exception as e:
+        print(f"Could not delete passphrase message: {e}")
+
     if update.message.reply_to_message:
         encrypted_text = update.message.reply_to_message.text
         if encrypted_text.startswith("Encrypted message:"):
             encrypted_text = encrypted_text.replace("Encrypted message:", "").strip()
     else:
-        if not context.args:
-            await update.message.reply_text(
-                "Please reply to an encrypted message with /decrypt or provide the encrypted message."
-            )
-            return
-        encrypted_text = ' '.join(context.args)
-
-    try:
-        decrypted_data = gpg.decrypt(encrypted_text)
-        if not decrypted_data.ok:
-            await update.message.reply_text(f"Decryption failed: {decrypted_data.status}")
-            return
+        await update.message.reply_text("Please reply to an encrypted message with /decrypt <passphrase>.")
+        return
     
-        try:
-            decrypted_text = str(decrypted_data)
-        except UnicodeDecodeError:
-            decrypted_text = decrypted_data.data.decode('utf-8', errors='replace')
+    decrypted_data = gpg.decrypt(encrypted_text, passphrase=passphrase)
 
-        await update.message.reply_text(f"Decrypted message:\n\n{decrypted_text}")
-    except Exception as e:
-        await update.message.reply_text(f"Error decrypting message: {str(e)}")
+    if not decrypted_data.ok:
+        await update.message.reply_text(f"Decryption failed: {decrypted_data.status}")
+        return
 
-        
+    decrypted_text = str(decrypted_data)
+    await update.message.reply_text(f"Decrypted message:\n\n{decrypted_text}")
 
-# Sends a message with the available commands and their usage.
+
+
+# Sends a message with the available commands and their usage
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "Available Commands:\n\n"
         "/createkey <name> <email> - Generate public key\n"
         "/encrypt <fingerprint> <message> – Encrypt and send a message\n"
-        "/decrypt – Decrypt a message (reply to an encrypted one or pass it as argument)\n"
+        "/decrypt <passphrase> – Decrypt a message (reply to an encrypted message or pass it as argument)\n"
         "/importkey – Attach and import a public key\n"
         "/listkeys – List available public keys\n"
     )
@@ -257,7 +273,7 @@ async def list_keys_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     for key in public_keys:
-        expiry = key.get('expiration_date', 'No expiration date set')
+        expiry = key.get('expires', 'No expiration date set')
         expiry_date = None
         
         if expiry and expiry != 'No expiration date set':
@@ -277,7 +293,7 @@ async def list_keys_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         key_list += f"  Fingerprint: `{key['fingerprint']}`\n"
         key_list += f"  User ID: {', '.join([uid.split('<')[0].strip() for uid in key['uids']])}\n"
-        key_list += f"  Expires: {expiry_date.strftime('%Y-%m-%d') if expiry_date else 'No expiration'}\n\n"
+        key_list += f"  Expires: {expiry_date.strftime('%m-%d-%Y %H:%M:%S') if expiry_date else 'No expiration'}\n\n"
 
     if key_list == "Available public keys:\n\n":
         await update.message.reply_text("No valid public keys available.")
